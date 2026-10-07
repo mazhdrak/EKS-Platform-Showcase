@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars (git-ignored).
+api_allowed_cidrs = ["203.0.113.10/32"] # curl -s https://checkip.amazonaws.com
+gitops_repo_url   = "https://github.com/<you>/eks-platform-showcase.git"
+
+# Optional: grant a teammate or SSO role read-only access
+# access_entries = {
+#   viewer = {
+#     principal_arn = "arn:aws:iam::123456789012:role/Viewer"
+#     policy_associations = {
+#       view = {
+#         policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+#         access_scope = { type = "cluster" }
+#       }
+#     }
+#   }
+# }

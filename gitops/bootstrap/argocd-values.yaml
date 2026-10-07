@@ -1,0 +1,27 @@
+---
+# Minimal, non-HA Argo CD for a demo cluster. Access via port-forward;
+# no ingress is exposed on purpose.
+global:
+  domain: argocd.local
+
+configs:
+  params:
+    server.insecure: true   # TLS is terminated by kubectl port-forward locally
+  cm:
+    timeout.reconciliation: 120s
+
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false   # flip to true once kube-prometheus-stack CRDs exist (Argo CD syncs it after bootstrap)
+
+server:
+  metrics:
+    enabled: true
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false

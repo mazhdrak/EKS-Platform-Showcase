@@ -1,0 +1,50 @@
+---
+name: terraform-apply
+
+# Manual only. The "production" environment requires an approving reviewer,
+# and only jobs in that environment can assume the apply role (see bootstrap).
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: apply or destroy
+        type: choice
+        options: [apply, destroy]
+        default: apply
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: tf-apply-dev
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/dev
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.13"
+      - run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+      - name: ${{ inputs.action }}
+        run: |
+          flag=""
+          [ "${{ inputs.action }}" = "destroy" ] && flag="-destroy"
+          terraform apply -input=false -auto-approve -lock-timeout=5m $flag \
+            -var 'api_allowed_cidrs=${{ vars.API_ALLOWED_CIDRS }}' \
+            -var "gitops_repo_url=https://github.com/${{ github.repository }}.git"

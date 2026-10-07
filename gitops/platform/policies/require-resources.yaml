@@ -1,0 +1,36 @@
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-requests-and-memory-limit
+  annotations:
+    policies.kyverno.io/title: Require CPU/memory requests and a memory limit
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Requests make scheduling and autoscaling predictable; a memory limit
+      bounds the blast radius of a leak. CPU limits are intentionally not
+      required (they cause throttling without protecting neighbours).
+spec:
+  background: true
+  rules:
+    - name: containers-have-resources
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kyverno", "monitoring", "argocd", "local-path-storage"]
+      validate:
+        failureAction: Enforce
+        message: "Every container needs cpu/memory requests and a memory limit."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    memory: "?*"

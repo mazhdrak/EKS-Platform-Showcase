@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits"
+  ],
+  "argocd": {
+    "managerFilePatterns": ["/gitops/clusters/.+\\.yaml$/"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^scripts/.+\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) registryUrl=(?<registryUrl>\\S+)\\n[A-Z_]+=\"(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group Terraform module and provider bumps into one PR",
+      "matchManagers": ["terraform"],
+      "groupName": "terraform"
+    },
+    {
+      "description": "Platform charts: never automerge, they get a plan/diff review",
+      "matchManagers": ["argocd", "custom.regex"],
+      "automerge": false
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+---
+name: app-release
+
+# Build -> push to ECR -> bump the image tag in the dev overlay.
+# Argo CD notices the commit and rolls the Deployment. CI never talks to
+# the cluster directly.
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/demo-service/**
+      - "!apps/demo-service/deploy/**"
+
+permissions:
+  contents: write   # commit the tag bump
+  id-token: write
+
+concurrency:
+  group: app-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: vars.AWS_ECR_PUSH_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - id: meta
+        run: |
+          echo "tag=$(date -u +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "image=${{ steps.ecr.outputs.registry }}/eks-showcase/demo-service" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: apps/demo-service
+          push: true
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
+          build-args: VERSION=${{ steps.meta.outputs.tag }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: bump image in dev overlay
+        working-directory: apps/demo-service/deploy/overlays/dev
+        run: |
+          kustomize edit set image "demo-service=${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy(demo-service): ${{ steps.meta.outputs.tag }} to dev"
+          git push

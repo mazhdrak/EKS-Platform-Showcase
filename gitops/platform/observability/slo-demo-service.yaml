@@ -1,0 +1,162 @@
+---
+# SLOs for demo-service (see docs/slo.md):
+#   availability: 99.5% of /api/hello requests are non-5xx over 30 days
+#   latency:      99% of /api/hello requests complete within 250ms
+# Alerting uses multi-window, multi-burn-rate rules (Google SRE Workbook, ch. 5).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-service-slo
+  namespace: monitoring
+spec:
+  groups:
+    - name: demo-service-slo.recording
+      interval: 30s
+      rules:
+        - record: slo:demo_service_error_ratio:rate5m
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[5m])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate30m
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[30m]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[30m])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate1h
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[1h]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[1h])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate2h
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[2h]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[2h])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate6h
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[6h]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[6h])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate1d
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[1d]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[1d])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate3d
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[3d]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[3d])), 1e-9)
+        - record: slo:demo_service_error_ratio:rate30d
+          expr: |
+            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[30d]))
+            /
+            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[30d])), 1e-9)
+        - record: slo:demo_service_slow_ratio:rate5m
+          # No traffic -> NaN (no data) rather than a false "100% slow".
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{route="/api/hello"}[5m]))
+              -
+              sum(rate(http_request_duration_seconds_bucket{route="/api/hello",le="0.25"}[5m]))
+            )
+            /
+            sum(rate(http_request_duration_seconds_count{route="/api/hello"}[5m]))
+        - record: slo:demo_service_slow_ratio:rate1h
+          # No traffic -> NaN (no data) rather than a false "100% slow".
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{route="/api/hello"}[1h]))
+              -
+              sum(rate(http_request_duration_seconds_bucket{route="/api/hello",le="0.25"}[1h]))
+            )
+            /
+            sum(rate(http_request_duration_seconds_count{route="/api/hello"}[1h]))
+        - record: slo:demo_service_slow_ratio:rate30d
+          # No traffic -> NaN (no data) rather than a false "100% slow".
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{route="/api/hello"}[30d]))
+              -
+              sum(rate(http_request_duration_seconds_bucket{route="/api/hello",le="0.25"}[30d]))
+            )
+            /
+            sum(rate(http_request_duration_seconds_count{route="/api/hello"}[30d]))
+        - record: slo:demo_service_availability_budget_remaining:ratio30d
+          expr: 1 - (slo:demo_service_error_ratio:rate30d / 0.005)
+    - name: demo-service-slo.alerts
+      rules:
+        - alert: DemoServiceErrorBudgetBurnFast
+          expr: |
+            slo:demo_service_error_ratio:rate1h > (14.4 * 0.005)
+            and
+            slo:demo_service_error_ratio:rate5m > (14.4 * 0.005)
+          for: 2m
+          labels:
+            severity: page
+            slo: demo-service-availability
+          annotations:
+            summary: "demo-service is burning its availability error budget (14.4x)"
+            description: "At this rate 2% of the 30-day budget is gone in 1 hour."
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/eks-platform-showcase/blob/main/docs/runbooks/slo-burn.md"
+        - alert: DemoServiceErrorBudgetBurnMedium
+          expr: |
+            slo:demo_service_error_ratio:rate6h > (6 * 0.005)
+            and
+            slo:demo_service_error_ratio:rate30m > (6 * 0.005)
+          for: 15m
+          labels:
+            severity: page
+            slo: demo-service-availability
+          annotations:
+            summary: "demo-service is burning its availability error budget (6x)"
+            description: "At this rate 5% of the 30-day budget is gone in 6 hours."
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/eks-platform-showcase/blob/main/docs/runbooks/slo-burn.md"
+        - alert: DemoServiceErrorBudgetBurnSlow
+          expr: |
+            slo:demo_service_error_ratio:rate1d > (3 * 0.005)
+            and
+            slo:demo_service_error_ratio:rate2h > (3 * 0.005)
+          for: 1h
+          labels:
+            severity: ticket
+            slo: demo-service-availability
+          annotations:
+            summary: "demo-service is burning its availability error budget (3x)"
+            description: "At this rate 10% of the 30-day budget is gone in 1 day."
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/eks-platform-showcase/blob/main/docs/runbooks/slo-burn.md"
+        - alert: DemoServiceErrorBudgetBurnChronic
+          expr: |
+            slo:demo_service_error_ratio:rate3d > (1 * 0.005)
+            and
+            slo:demo_service_error_ratio:rate6h > (1 * 0.005)
+          for: 3h
+          labels:
+            severity: ticket
+            slo: demo-service-availability
+          annotations:
+            summary: "demo-service is burning its availability error budget (1x)"
+            description: "The service is on track to exhaust its 30-day budget."
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/eks-platform-showcase/blob/main/docs/runbooks/slo-burn.md"
+        - alert: DemoServiceLatencyBudgetBurnFast
+          expr: |
+            slo:demo_service_slow_ratio:rate1h > (14.4 * 0.01)
+            and
+            slo:demo_service_slow_ratio:rate5m > (14.4 * 0.01)
+          for: 2m
+          labels:
+            severity: page
+            slo: demo-service-latency
+          annotations:
+            summary: "More than 14% of demo-service requests are slower than 250ms"
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/eks-platform-showcase/blob/main/docs/runbooks/slo-burn.md"
+        - alert: DemoServiceErrorBudgetExhausted
+          expr: slo:demo_service_availability_budget_remaining:ratio30d < 0
+          for: 15m
+          labels:
+            severity: ticket
+            slo: demo-service-availability
+          annotations:
+            summary: "30-day availability error budget is exhausted: freeze risky releases"
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/eks-platform-showcase/blob/main/docs/runbooks/slo-burn.md"

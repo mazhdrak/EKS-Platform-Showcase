@@ -1,0 +1,37 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-service
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_USER/eks-platform-showcase.git
+    targetRevision: main
+    path: apps/demo-service/deploy/overlays/dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+  ignoreDifferences:
+    # HPA owns replicas; do not fight it on every sync.
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

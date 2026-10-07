@@ -1,0 +1,34 @@
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged
+  annotations:
+    policies.kyverno.io/title: Disallow privileged containers
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Privileged containers have full access to the host. Only system
+      namespaces may run them.
+spec:
+  background: true
+  rules:
+    - name: no-privileged
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kyverno", "monitoring", "argocd", "local-path-storage"]
+      validate:
+        failureAction: Enforce
+        message: "Privileged containers are not allowed."
+        pattern:
+          spec:
+            =(initContainers):
+              - =(securityContext):
+                  =(privileged): false
+            containers:
+              - =(securityContext):
+                  =(privileged): false

@@ -1,0 +1,21 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+plan.txt
+crash.log
+backend.hcl
+terraform.tfvars
+.terraform.lock.hcl.bak
+
+# Go
+apps/demo-service/demo-service
+*.test
+coverage.out
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

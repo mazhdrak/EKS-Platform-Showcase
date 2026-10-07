@@ -1,0 +1,117 @@
+---
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: go test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/demo-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/demo-service/go.mod
+      - run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - run: go vet ./...
+      - run: go test -race -cover ./...
+
+  image:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: apps/demo-service
+          push: false
+          build-args: VERSION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  terraform:
+    name: terraform fmt / validate / tflint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root:
+          - infra/terraform/bootstrap
+          - infra/terraform/environments/dev
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.13"
+      - run: terraform fmt -check -recursive infra/terraform
+      - name: validate
+        working-directory: ${{ matrix.root }}
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - uses: terraform-linters/setup-tflint@v4
+      - name: tflint
+        working-directory: ${{ matrix.root }}
+        run: |
+          tflint --init --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl"
+          tflint --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl" --recursive
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  kubernetes:
+    name: kustomize build / kubeconform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
+      - run: pip install yamllint && yamllint gitops apps/demo-service/deploy .github kind
+      - name: render and validate every kustomization
+        env:
+          # Schemas for Argo CD, Prometheus Operator and Kyverno CRDs
+          CRD_SCHEMAS: https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+        run: |
+          set -euo pipefail
+          for dir in apps/demo-service/deploy/overlays/* gitops/platform/*; do
+            echo "::group::$dir"
+            kubectl kustomize "$dir" | kubeconform -strict -summary \
+              -schema-location default \
+              -schema-location "$CRD_SCHEMAS"
+            echo "::endgroup::"
+          done
+          kubeconform -strict -summary \
+            -schema-location default \
+            -schema-location "$CRD_SCHEMAS" \
+            gitops/clusters
+
+  security:
+    name: checkov (IaC + manifests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install checkov
+      - name: terraform
+        run: checkov -d infra/terraform --framework terraform --config-file .checkov.yaml
+      - name: kubernetes
+        run: checkov -d apps/demo-service/deploy --framework kustomize --config-file .checkov.yaml
+      - name: dockerfile
+        run: checkov -f apps/demo-service/Dockerfile --framework dockerfile --config-file .checkov.yaml

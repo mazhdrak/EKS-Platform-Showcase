@@ -1,0 +1,37 @@
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow the latest tag
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Mutable tags make rollbacks and incident timelines unreliable.
+      Images must be pinned to an explicit tag or digest.
+spec:
+  background: true
+  rules:
+    - name: require-explicit-tag
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kyverno", "monitoring", "argocd", "local-path-storage"]
+      validate:
+        failureAction: Enforce
+        message: "Images must use an explicit tag other than :latest."
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.image }}"
+                    operator: Equals
+                    value: "*:latest"
+                  - key: "{{ contains(element.image, ':') || contains(element.image, '@') }}"
+                    operator: Equals
+                    value: false

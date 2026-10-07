@@ -1,0 +1,19 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: demo
+resources:
+  - ../../base
+images:
+  - name: demo-service
+    newName: demo-service
+    newTag: local
+patches:
+  # Image is side-loaded with `kind load docker-image`, never pulled.
+  - target:
+      kind: Deployment
+      name: demo-service
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
