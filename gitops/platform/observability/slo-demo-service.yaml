@@ -13,46 +13,48 @@ spec:
     - name: demo-service-slo.recording
       interval: 30s
       rules:
+        # "or vector(0)": with zero errors the 5xx series does not exist, and
+        # empty / x is empty (No data), not 0. No traffic still yields No data.
         - record: slo:demo_service_error_ratio:rate5m
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[5m]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[5m])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[5m])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[5m]))
         - record: slo:demo_service_error_ratio:rate30m
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[30m]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[30m])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[30m])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[30m]))
         - record: slo:demo_service_error_ratio:rate1h
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[1h]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[1h])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[1h])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[1h]))
         - record: slo:demo_service_error_ratio:rate2h
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[2h]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[2h])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[2h])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[2h]))
         - record: slo:demo_service_error_ratio:rate6h
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[6h]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[6h])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[6h])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[6h]))
         - record: slo:demo_service_error_ratio:rate1d
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[1d]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[1d])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[1d])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[1d]))
         - record: slo:demo_service_error_ratio:rate3d
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[3d]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[3d])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[3d])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[3d]))
         - record: slo:demo_service_error_ratio:rate30d
           expr: |
-            sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[30d]))
+            (sum(rate(http_requests_total{route="/api/hello",code=~"5.."}[30d])) or vector(0))
             /
-            clamp_min(sum(rate(http_requests_total{route="/api/hello"}[30d])), 1e-9)
+            sum(rate(http_requests_total{route="/api/hello"}[30d]))
         - record: slo:demo_service_slow_ratio:rate5m
           # No traffic -> NaN (no data) rather than a false "100% slow".
           expr: |
