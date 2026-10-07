@@ -11,7 +11,7 @@ APP_DIR        := apps/demo-service
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2} /^##@/ {printf "\n\033[1m%s\033[0m\n", substr($$0, 5)}' $(MAKEFILE_LIST)
 
-set-repo: ## Point Argo CD manifests at your fork (run once)
+set-repo: ## Forks only: point Argo CD manifests at your fork
 	@scripts/set-repo.sh
 
 ##@ Quality

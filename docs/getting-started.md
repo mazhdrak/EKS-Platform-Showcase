@@ -9,7 +9,8 @@
 | Terraform ≥ 1.10 | | ✓ |
 | AWS CLI v2, credentials for an account you can spend money in | | ✓ |
 
-Fork the repository (it must be **public**, or you must add repo credentials to Argo CD), clone the fork, then:
+Argo CD pulls from `https://github.com/mazhdrak/EKS-Platform-Showcase`. If you work from a
+fork (it must be public, or you must add repo credentials to Argo CD), run this once:
 
 ```bash
 make set-repo
@@ -51,7 +52,7 @@ make local-down # when finished
 ```bash
 cd infra/terraform/bootstrap
 terraform init
-terraform apply -var github_owner=<your-github-user>
+terraform apply   # defaults: mazhdrak/EKS-Platform-Showcase; override with -var for a fork
 ```
 
 This creates the S3 state bucket and three IAM roles that GitHub Actions can assume through OIDC.

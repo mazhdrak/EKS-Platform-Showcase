@@ -1,6 +1,6 @@
 # Copy to terraform.tfvars (git-ignored).
 api_allowed_cidrs = ["203.0.113.10/32"] # curl -s https://checkip.amazonaws.com
-gitops_repo_url   = "https://github.com/<you>/eks-platform-showcase.git"
+gitops_repo_url   = "https://github.com/mazhdrak/EKS-Platform-Showcase.git"
 
 # Optional: grant a teammate or SSO role read-only access
 # access_entries = {

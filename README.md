@@ -77,11 +77,10 @@ docs/                       getting started, SLOs, ADRs, runbooks, postmortem
 
 ## Quick start (local, free)
 
-Requirements: Docker, kind, kubectl, helm, and a **public** fork of this repo, because Argo CD pulls from GitHub.
+Requirements: Docker, kind, kubectl, helm. Argo CD pulls manifests from this public repo.
+If you fork it, run `make set-repo` first, then commit and push, so Argo CD syncs from your fork.
 
 ```bash
-make set-repo          # rewrites the repo URL in the Argo CD manifests to your fork
-git commit -am "chore: point gitops at my fork" && git push
 make local-up          # kind cluster + image + Argo CD + root app
 kubectl -n argocd get applications -w   # wait until everything is Synced/Healthy
 make load              # synthetic traffic

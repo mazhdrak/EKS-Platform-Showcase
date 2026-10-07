@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/YOUR_GITHUB_USER/eks-platform-showcase.git
+    repoURL: https://github.com/mazhdrak/EKS-Platform-Showcase.git
     targetRevision: main
     path: gitops/clusters/local
   destination:

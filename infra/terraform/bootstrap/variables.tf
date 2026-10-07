@@ -13,12 +13,13 @@ variable "region" {
 variable "github_owner" {
   description = "GitHub user or organization that owns this repository."
   type        = string
+  default     = "mazhdrak"
 }
 
 variable "github_repo" {
-  description = "Repository name."
+  description = "Repository name, exactly as on GitHub: it is matched against the OIDC sub claim."
   type        = string
-  default     = "eks-platform-showcase"
+  default     = "EKS-Platform-Showcase"
 }
 
 variable "apply_environment" {

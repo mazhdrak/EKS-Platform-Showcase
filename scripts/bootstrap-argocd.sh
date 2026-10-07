@@ -14,12 +14,6 @@ ROOT_APP="$ROOT/gitops/bootstrap/root-${ENVIRONMENT}.yaml"
 
 [[ -f "$ROOT_APP" ]] || { echo "unknown environment: $ENVIRONMENT" >&2; exit 1; }
 
-if grep -rq "YOUR_GITHUB_USER" "$ROOT/gitops"; then
-  echo "Repository URL placeholders are still present." >&2
-  echo "Run 'make set-repo' once, commit and push, then retry." >&2
-  exit 1
-fi
-
 for bin in kubectl helm; do
   command -v "$bin" >/dev/null || { echo "missing dependency: $bin" >&2; exit 1; }
 done
