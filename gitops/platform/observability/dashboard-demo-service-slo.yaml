@@ -307,9 +307,11 @@ data:
               },
               "custom": {
                 "thresholdsStyle": {
-                  "mode": "line"
+                  "mode": "line+area"
                 }
-              }
+              },
+              "min": 0,
+              "max": 0.25
             },
             "overrides": []
           }
