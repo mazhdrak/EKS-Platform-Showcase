@@ -20,5 +20,8 @@ skip-check:
   # CPU limits cause CFS throttling without protecting neighbours; requests +
   # memory limits are enforced instead (gitops/platform/policies/require-resources.yaml).
   - CKV_K8S_11
+  # ECR tags are IMMUTABLE, so IfNotPresent is safe and avoids a registry hit per
+  # pod start; the local overlay uses Never because images are side-loaded into kind.
+  - CKV_K8S_15
   # Docker HEALTHCHECK is ignored by Kubernetes; readiness/liveness probes are used.
   - CKV_DOCKER_2
