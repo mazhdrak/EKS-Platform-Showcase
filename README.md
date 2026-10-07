@@ -9,7 +9,7 @@ It runs two ways from the same manifests:
 | Mode | Command | Cost | Use it for |
 |---|---|---|---|
 | **Local** (kind) | `make local-up` | free | trying it in 10 minutes |
-| **AWS** (EKS) | `make bootstrap && make apply` | roughly $4–5/day, see [Cost](#cost) | the real thing |
+| **AWS** (EKS) | `make bootstrap && make apply` | about $5/day, see [Cost](#cost) | the real thing |
 
 ![SLO dashboard for demo-service: 100% availability, full error budget, burn rate 0, ~5 req/s, p99 under 5 ms](docs/images/grafana-slo-dashboard.png)
 
@@ -118,7 +118,7 @@ Approximate on-demand figures for `eu-central-1`. Check current AWS pricing befo
 | 2 × t3.large Spot nodes | about $0.03–0.04/hour each |
 | EBS (20 GiB gp3) + CloudWatch logs | a few dollars/month |
 
-That is roughly **$4–5 per day**. Run `make destroy` when you are done; nothing here is meant to run 24/7.
+That is roughly **$5 per day**. Run `make destroy` when you are done; nothing here is meant to run 24/7.
 
 ## Deliberate simplifications
 
