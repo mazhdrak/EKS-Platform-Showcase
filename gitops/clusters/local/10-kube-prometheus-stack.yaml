@@ -51,6 +51,10 @@ spec:
           enabled: false
         kubeEtcd:
           enabled: false
+        # kind's kube-proxy serves metrics on 127.0.0.1:10249 only, which makes
+        # KubeProxyDown fire permanently (found during game day 001).
+        kubeProxy:
+          enabled: false
   syncPolicy:
     automated:
       prune: true
