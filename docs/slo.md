@@ -24,6 +24,28 @@ window makes the alert reset quickly once the problem stops.
 | `DemoServiceLatencyBudgetBurnFast` | 1h / 5m | 14.4× | 2% | page |
 | `DemoServiceErrorBudgetExhausted` | n/a | n/a | 100% | ticket |
 
+### How long until an alert fires?
+
+A burn-rate alert fires once the *long* window's error ratio crosses its threshold:
+
+```
+time to fire ≈ (threshold burn rate / actual burn rate) × long window + for:
+```
+
+The actual burn rate is the error ratio divided by the 0.5% budget. Some examples, assuming
+a full window of clean history beforehand:
+
+| Error rate | Burn | `BurnFast` (14.4×, 1h, `for: 2m`) | `BurnMedium` (6×, 6h, `for: 15m`) |
+|---|---|---|---|
+| 100% | 200× | ~6 min | ~26 min |
+| 20% | 40× | ~24 min | ~69 min |
+| 5% | 10× | never | ~3.9 h |
+
+Small error rates are deliberately left to the slower alerts. With less history than the
+long window (a new service, or a fresh local cluster) every alert fires sooner than this. This was learned the hard way in
+[game day 001](postmortems/2026-10-game-day-001.md), where we expected a 20% error rate to page
+in 5 minutes.
+
 Rules: [`gitops/platform/observability/slo-demo-service.yaml`](../gitops/platform/observability/slo-demo-service.yaml).
 
 ## Error budget policy

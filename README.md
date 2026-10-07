@@ -100,12 +100,12 @@ The service has a fault-injection knob. Change it **through git**, since Argo CD
 ```yaml
 # apps/demo-service/deploy/base/deployment.yaml
 - name: FAULT_ERROR_RATE
-  value: "0.2"
+  value: "1.0"   # 100% errors: BurnFast pages in ~6 min. 0.2 takes ~20 min, by design.
 ```
 
-Push it, and within a few minutes `DemoServiceErrorBudgetBurnFast` fires in Alertmanager (`make prometheus` → Alerts).
-Revert the commit to recover. [docs/postmortems/2026-10-game-day-001.md](docs/postmortems/2026-10-game-day-001.md)
-is the write-up of exactly this exercise.
+Push it, watch the `demo-service / SLO` dashboard and `make prometheus` → Alerts, then revert the commit.
+[Game day 001](docs/postmortems/2026-10-game-day-001.md) is the write-up of a real run of this exercise:
+timeline, screenshots, the predictions it disproved and the action items it produced.
 
 ## Cost
 
