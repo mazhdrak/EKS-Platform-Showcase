@@ -3,6 +3,9 @@
 compact: true
 quiet: true
 skip-check:
+  # Registry modules are pinned with semver constraints + .terraform.lock.hcl and
+  # bumped by Renovate; git-SHA sources would lose registry version resolution.
+  - CKV_TF_1
   # ECR: AES256 is sufficient for a public demo image; KMS CMK adds cost.
   - CKV_AWS_136
   # S3 state bucket: access logging / cross-region replication out of scope for a demo.
@@ -14,3 +17,8 @@ skip-check:
   - CKV_AWS_274
   # Image is pinned by the GitOps overlay, not by digest in the base manifest.
   - CKV_K8S_43
+  # CPU limits cause CFS throttling without protecting neighbours; requests +
+  # memory limits are enforced instead (gitops/platform/policies/require-resources.yaml).
+  - CKV_K8S_11
+  # Docker HEALTHCHECK is ignored by Kubernetes; readiness/liveness probes are used.
+  - CKV_DOCKER_2

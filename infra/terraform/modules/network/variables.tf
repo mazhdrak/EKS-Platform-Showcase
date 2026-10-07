@@ -12,13 +12,13 @@ variable "cidr" {
   }
 }
 
-variable "az_count" {
-  type    = number
-  default = 3
+variable "azs" {
+  description = "Availability zones, pinned explicitly (2 or 3)."
+  type        = list(string)
 
   validation {
-    condition     = var.az_count >= 2 && var.az_count <= 3
-    error_message = "az_count must be 2 or 3 (EKS requires at least two AZs)."
+    condition     = length(var.azs) >= 2 && length(var.azs) <= 3
+    error_message = "Provide 2 or 3 AZs (EKS requires at least two)."
   }
 }
 

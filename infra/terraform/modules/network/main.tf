@@ -8,29 +8,19 @@ terraform {
   }
 }
 
-data "aws_availability_zones" "available" {
-  state = "available"
-  filter {
-    name   = "opt-in-status"
-    values = ["opt-in-not-required"]
-  }
-}
-
-locals {
-  azs = slice(data.aws_availability_zones.available.names, 0, var.az_count)
-}
-
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.0"
 
   name = var.name
   cidr = var.cidr
-  azs  = local.azs
+  # Explicit AZs: a data-source lookup can change when AWS adds a zone,
+  # which would shift subnet CIDRs and force replacement.
+  azs = var.azs
 
   # /20 private subnets leave room for many pods with the VPC CNI.
-  private_subnets = [for i, _ in local.azs : cidrsubnet(var.cidr, 4, i)]
-  public_subnets  = [for i, _ in local.azs : cidrsubnet(var.cidr, 8, 48 + i)]
+  private_subnets = [for i, _ in var.azs : cidrsubnet(var.cidr, 4, i)]
+  public_subnets  = [for i, _ in var.azs : cidrsubnet(var.cidr, 8, 48 + i)]
 
   enable_nat_gateway = true
   # Cost trade-off: one NAT for non-prod, one per AZ for prod.

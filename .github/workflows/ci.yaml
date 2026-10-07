@@ -57,14 +57,30 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.13"
-      - run: terraform fmt -check -recursive infra/terraform
+          terraform_wrapper: false
+      - name: fmt
+        # Each unformatted file becomes an inline annotation with its diff.
+        run: |
+          files=$(terraform fmt -check -recursive -list=true infra/terraform || true)
+          [ -z "$files" ] && exit 0
+          for f in $files; do
+            diff=$(terraform fmt -diff -check "$f" | tail -n +3 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')
+            echo "::error file=$f,title=terraform fmt::${diff}"
+          done
+          exit 1
       - name: validate
+        if: success() || failure()
         working-directory: ${{ matrix.root }}
         run: |
           terraform init -backend=false -input=false
-          terraform validate
+          terraform validate -json > validate.json || true
+          jq -r --arg root "${{ matrix.root }}" '.diagnostics[] |
+            "::\(.severity) file=\($root)/\(.range.filename // "."),line=\(.range.start.line // 1)"
+            + ",title=\(.summary)::\(.detail // "" | gsub("\n"; "%0A"))"' validate.json
+          jq -e '.valid' validate.json > /dev/null
       - uses: terraform-linters/setup-tflint@v4
       - name: tflint
+        if: success() || failure()
         working-directory: ${{ matrix.root }}
         run: |
           tflint --init --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl"
@@ -109,9 +125,18 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install checkov
+      # Each step reports findings as inline annotations (file + line).
       - name: terraform
-        run: checkov -d infra/terraform --framework terraform --config-file .checkov.yaml
+        run: |
+          checkov -d infra/terraform --framework terraform --config-file .checkov.yaml -o json > tf.json || true
+          python3 scripts/ci/checkov-annotate.py tf.json infra/terraform
       - name: kubernetes
-        run: checkov -d apps/demo-service/deploy --framework kustomize --config-file .checkov.yaml
+        if: success() || failure()
+        run: |
+          checkov -d apps/demo-service/deploy --framework kustomize --config-file .checkov.yaml -o json > k8s.json || true
+          python3 scripts/ci/checkov-annotate.py k8s.json apps/demo-service/deploy
       - name: dockerfile
-        run: checkov -f apps/demo-service/Dockerfile --framework dockerfile --config-file .checkov.yaml
+        if: success() || failure()
+        run: |
+          checkov -f apps/demo-service/Dockerfile --framework dockerfile --config-file .checkov.yaml -o json > docker.json || true
+          python3 scripts/ci/checkov-annotate.py docker.json .

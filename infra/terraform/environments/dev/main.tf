@@ -39,7 +39,7 @@ module "network" {
 
   name               = local.name
   cidr               = var.vpc_cidr
-  az_count           = 3
+  azs                = ["${var.region}a", "${var.region}b", "${var.region}c"]
   single_nat_gateway = true # dev: cost over availability
   tags               = local.tags
 }

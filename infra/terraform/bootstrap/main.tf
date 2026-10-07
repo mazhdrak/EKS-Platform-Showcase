@@ -66,7 +66,7 @@ resource "aws_s3_bucket_public_access_block" "state" {
 resource "aws_s3_bucket_policy" "state_tls_only" {
   bucket = aws_s3_bucket.state.id
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [{
       Sid       = "DenyInsecureTransport"
       Effect    = "Deny"
