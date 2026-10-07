@@ -11,7 +11,7 @@ It runs two ways from the same manifests:
 | **Local** (kind) | `make local-up` | free | trying it in 10 minutes |
 | **AWS** (EKS) | `make bootstrap && make apply` | about $5/day, see [Cost](#cost) | the real thing |
 
-![SLO dashboard for demo-service: 100% availability, full error budget, burn rate 0, ~5 req/s, p99 under 5 ms](docs/images/grafana-slo-dashboard.png)
+![SLO dashboard for demo-service: 100% availability, full error budget, burn rate 0, ~5 req/s, p99 under 5 ms, error ratio well below the 3% and 7.2% burn thresholds](docs/images/grafana-slo-dashboard.png)
 
 *The `demo-service / SLO` Grafana dashboard on the local kind cluster, under synthetic load.*
 
